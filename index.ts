@@ -39,20 +39,22 @@ function expandHome(filepath: string): string {
 const vaultDirectories = [normalizePath(path.resolve(expandHome(args[0])))]
 
 // Validate that all directories exist and are accessible
-await Promise.all(
-  args.map(async (dir) => {
-    try {
-      const stats = await fs.stat(dir)
-      if (!stats.isDirectory()) {
-        console.error(`Error: ${dir} is not a directory`)
+async function validate() {
+  await Promise.all(
+    args.map(async (dir) => {
+      try {
+        const stats = await fs.stat(dir)
+        if (!stats.isDirectory()) {
+          console.error(`Error: ${dir} is not a directory`)
+          process.exit(1)
+        }
+      } catch (error) {
+        console.error(`Error accessing directory ${dir}:`, error)
         process.exit(1)
       }
-    } catch (error) {
-      console.error(`Error accessing directory ${dir}:`, error)
-      process.exit(1)
-    }
-  })
-)
+    })
+  )
+}
 
 // Security utilities
 async function validatePath(requestedPath: string): Promise<string> {
@@ -279,6 +281,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start server
 async function runServer() {
+  await validate()
   const transport = new StdioServerTransport()
   await server.connect(transport)
   console.error("MCP Obsidian Server running on stdio")
